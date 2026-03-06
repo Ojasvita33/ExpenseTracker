@@ -2,14 +2,16 @@ const express = require('express');
 const Expense = require('../models/Expense');
 const auth = require('../middleware/auth');
 const { Parser } = require('json2csv');
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const router = express.Router();
 
 // Get monthly expense totals
 router.get('/monthly', auth, async (req, res) => {
   try {
     const year = parseInt(req.query.year) || new Date().getFullYear();
-    
+
     const monthlyExpenses = await Expense.aggregate([
       {
         $match: {
@@ -33,9 +35,9 @@ router.get('/monthly', auth, async (req, res) => {
     ]);
 
     // Fill in missing months with 0
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-                   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
     const result = months.map((month, index) => {
       const found = monthlyExpenses.find(item => item._id === index + 1);
       return {
@@ -58,35 +60,38 @@ router.get('/monthly', auth, async (req, res) => {
 
 // Get category-wise totals
 router.get('/category', auth, async (req, res) => {
+
   try {
-    const startDate = req.query.startDate ? new Date(req.query.startDate) : new Date(new Date().getFullYear(), 0, 1);
-    const endDate = req.query.endDate ? new Date(req.query.endDate) : new Date();
+
+    const year = parseInt(req.query.year) || new Date().getFullYear();
+
+    const startDate = new Date(year, 0, 1);
+    const endDate = new Date(year + 1, 0, 1);
 
     const categoryTotals = await Expense.aggregate([
-      {
-        $match: {
-          userId: req.user._id,
-          date: {
-            $gte: startDate,
-            $lte: endDate
-          }
-        }
-      },
-      {
-        $group: {
-          _id: '$category',
-          total: { $sum: '$amount' },
-          count: { $sum: 1 },
-          avgAmount: { $avg: '$amount' }
-        }
-      },
-      {
-        $sort: { total: -1 }
+  {
+    $match: {
+      userId: req.user._id,
+      date: {
+        $gte: startDate,
+        $lt: endDate
       }
-    ]);
+    }
+  },
+  {
+    $group: {
+      _id: "$category",
+      total: { $sum: "$amount" },
+      count: { $sum: 1 }
+    }
+  },
+  {
+    $sort: { total: -1 }
+  }
+]);
 
     const totalAmount = categoryTotals.reduce((sum, cat) => sum + cat.total, 0);
-    
+
     const result = categoryTotals.map(cat => ({
       category: cat._id,
       total: cat.total,
@@ -142,13 +147,13 @@ router.get('/trends', auth, async (req, res) => {
     // Create array of last 12 months
     const months = [];
     const current = new Date(startDate);
-    
+
     while (current <= endDate) {
       const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                         'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      
-      const found = trends.find(t => 
-        t._id.year === current.getFullYear() && 
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+      const found = trends.find(t =>
+        t._id.year === current.getFullYear() &&
         t._id.month === current.getMonth() + 1
       );
 
@@ -288,7 +293,7 @@ router.get('/export/csv', auth, async (req, res) => {
 
     const fields = ['title', 'amount', 'category', 'date', 'description'];
     const opts = { fields };
-    
+
     const parser = new Parser(opts);
     const csv = parser.parse(expenses);
 
@@ -301,4 +306,52 @@ router.get('/export/csv', auth, async (req, res) => {
   }
 });
 
+router.post("/ai-analysis", auth, async (req, res) => {
+
+  try {
+
+    const expenses = await Expense.find({
+      userId: req.user._id
+    }).sort({ date: -1 }).limit(20);
+
+    const formattedExpenses = expenses.map(e =>
+      `${e.category}: ${e.amount}`
+    ).join("\n");
+
+    const prompt = `
+You are a financial advisor.
+
+Analyze these expenses:
+
+${formattedExpenses}
+
+Give short insights:
+- Highest spending category
+- Spending pattern
+- Saving advice
+`;
+
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash-lite"
+    });
+
+    const result = await model.generateContent(prompt);
+
+    const text = result.response.text();
+
+    res.json({
+      insight: text
+    });
+
+  } catch (error) {
+
+    console.error("AI ERROR:", error.message);
+
+    res.status(500).json({
+      message: "AI analysis failed"
+    });
+
+  }
+
+});
 module.exports = router;

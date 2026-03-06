@@ -18,6 +18,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.20.2",
     "cors": "^2.8.5",
@@ -26,7 +27,9 @@
     "json2csv": "^5.0.7",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^7.5.0",
-    "node-fetch": "^2.6.7"
+    "node-fetch": "^2.6.7",
+    "nodemailer": "^8.0.1",
+    "openai": "^6.27.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"

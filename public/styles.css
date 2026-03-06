@@ -162,7 +162,7 @@ body {
 }
 
 .row.mb-4 .card .card-body {
-    flex: 1 1 auto; /* allow body to grow and keep consistent spacing */
+    flex: 1 1 auto; 
 }
 
 /* Chart containers */
@@ -502,7 +502,7 @@ canvas {
 
 /* Dark mode chart adjustments */
 [data-theme="dark"] canvas {
-    filter: brightness(0.9);
+    filter: brightness(1.1);
 }
 
 /* Dark mode category badges for better visibility */
@@ -891,4 +891,23 @@ canvas {
 
 [data-theme="dark"] .text-black {
     color: #ffffff !important;
+}
+
+/* AI Insight Card */
+
+.ai-insight-card {
+    padding: 20px;
+    border-radius: 12px;
+    background: #f1f8ff;
+    border-left: 5px solid #0d6efd;
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+/* Dark mode */
+
+[data-theme="dark"] .ai-insight-card {
+    background: #2d3748;
+    border-left: 5px solid #4dd0e1;
+    color: #ffffff;
 }

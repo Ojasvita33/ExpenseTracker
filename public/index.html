@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +9,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="styles.css" rel="stylesheet">
 </head>
+
 <body>
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
@@ -18,36 +20,39 @@
             <div class="navbar-nav ms-auto d-flex align-items-center">
                 <!-- Currency Selector -->
                 <div class="dropdown me-3" id="currencySelector" style="display: none;">
-                    <button class="btn btn-outline-light btn-sm dropdown-toggle" type="button" id="currencyDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <button class="btn btn-outline-light btn-sm dropdown-toggle" type="button" id="currencyDropdown"
+                        data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="fas fa-coins me-1"></i>
                         <span id="selectedCurrency">INR</span>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="currencyDropdown">
-                        <li><h6 class="dropdown-header">Default Currency</h6></li>
+                        <li>
+                            <h6 class="dropdown-header">Default Currency</h6>
+                        </li>
                         <li><a class="dropdown-item" href="#" onclick="setDefaultCurrency('INR')">
-                            <i class="fas fa-rupee-sign me-2"></i>INR - Indian Rupee
-                        </a></li>
+                                <i class="fas fa-rupee-sign me-2"></i>INR - Indian Rupee
+                            </a></li>
                         <li><a class="dropdown-item" href="#" onclick="setDefaultCurrency('USD')">
-                            <i class="fas fa-dollar-sign me-2"></i>USD - US Dollar
-                        </a></li>
+                                <i class="fas fa-dollar-sign me-2"></i>USD - US Dollar
+                            </a></li>
                         <li><a class="dropdown-item" href="#" onclick="setDefaultCurrency('EUR')">
-                            <i class="fas fa-euro-sign me-2"></i>EUR - Euro
-                        </a></li>
+                                <i class="fas fa-euro-sign me-2"></i>EUR - Euro
+                            </a></li>
                         <li><a class="dropdown-item" href="#" onclick="setDefaultCurrency('GBP')">
-                            <i class="fas fa-pound-sign me-2"></i>GBP - British Pound
-                        </a></li>
+                                <i class="fas fa-pound-sign me-2"></i>GBP - British Pound
+                            </a></li>
                         <li><a class="dropdown-item" href="#" onclick="setDefaultCurrency('JPY')">
-                            <i class="fas fa-yen-sign me-2"></i>JPY - Japanese Yen
-                        </a></li>
+                                <i class="fas fa-yen-sign me-2"></i>JPY - Japanese Yen
+                            </a></li>
                         <li><a class="dropdown-item" href="#" onclick="setDefaultCurrency('CAD')">
-                            <i class="fas fa-dollar-sign me-2"></i>CAD - Canadian Dollar
-                        </a></li>
+                                <i class="fas fa-dollar-sign me-2"></i>CAD - Canadian Dollar
+                            </a></li>
                         <li><a class="dropdown-item" href="#" onclick="setDefaultCurrency('AUD')">
-                            <i class="fas fa-dollar-sign me-2"></i>AUD - Australian Dollar
-                        </a></li>
+                                <i class="fas fa-dollar-sign me-2"></i>AUD - Australian Dollar
+                            </a></li>
                     </ul>
                 </div>
-                
+
                 <!-- Theme Toggle -->
                 <button class="btn btn-outline-light btn-sm me-3" id="themeToggle" onclick="toggleTheme()">
                     <i class="fas fa-moon" id="themeIcon"></i>
@@ -65,6 +70,7 @@
     </nav>
 
     <!-- Login Modal -->
+
     <div class="modal fade" id="loginModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -89,10 +95,41 @@
                         <button type="submit" class="btn btn-primary w-100" id="authSubmitBtn">Login</button>
                     </form>
                     <div class="text-center mt-3">
+                        <p class="text-center mt-2">
+                            <a href="#" onclick="showForgotModal()">Forgot Password?</a>
+                        </p>
                         <span id="authSwitchText">Don't have an account?</span>
                         <a href="#" id="authSwitchLink" onclick="toggleAuthMode()">Register here</a>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+    <!-- Forgot Password Modal -->
+
+    <div class="modal fade" id="forgotModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">Forgot Password</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+
+                    <input type="email" id="forgotEmail" class="form-control" placeholder="Enter your registered email">
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button class="btn btn-primary" onclick="sendResetLink()">
+                        Send Reset Link
+                    </button>
+
+                </div>
+
             </div>
         </div>
     </div>
@@ -168,22 +205,26 @@
             <!-- Tabs -->
             <ul class="nav nav-tabs nav-fill" id="mainTabs" role="tablist" style="display: flex !important;">
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="expenses-tab" data-bs-toggle="tab" data-bs-target="#expenses" type="button" role="tab">
+                    <button class="nav-link active" id="expenses-tab" data-bs-toggle="tab" data-bs-target="#expenses"
+                        type="button" role="tab">
                         <i class="fas fa-list me-1"></i>Expenses
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="add-tab" data-bs-toggle="tab" data-bs-target="#add" type="button" role="tab">
+                    <button class="nav-link" id="add-tab" data-bs-toggle="tab" data-bs-target="#add" type="button"
+                        role="tab">
                         <i class="fas fa-plus me-1"></i>Add Expense
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="reports-tab" data-bs-toggle="tab" data-bs-target="#reports" type="button" role="tab">
+                    <button class="nav-link" id="reports-tab" data-bs-toggle="tab" data-bs-target="#reports"
+                        type="button" role="tab">
                         <i class="fas fa-chart-bar me-1"></i>Reports
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="currency-tab" data-bs-toggle="tab" data-bs-target="#currency" type="button" role="tab">
+                    <button class="nav-link" id="currency-tab" data-bs-toggle="tab" data-bs-target="#currency"
+                        type="button" role="tab">
                         <i class="fas fa-exchange-alt me-1"></i>Currency
                     </button>
                 </li>
@@ -209,7 +250,8 @@
                             <!-- Filters -->
                             <div class="row mb-3">
                                 <div class="col-md-3">
-                                    <input type="text" class="form-control" id="searchInput" placeholder="Search expenses...">
+                                    <input type="text" class="form-control" id="searchInput"
+                                        placeholder="Search expenses...">
                                 </div>
                                 <div class="col-md-2">
                                     <select class="form-select" id="categoryFilter">
@@ -226,7 +268,8 @@
                                     </select>
                                 </div>
                                 <div class="col-md-2">
-                                    <input type="date" class="form-control" id="filterDate" placeholder="Filter by date">
+                                    <input type="date" class="form-control" id="filterDate"
+                                        placeholder="Filter by date">
                                 </div>
                                 <div class="col-md-4">
                                     <button class="btn btn-primary" onclick="loadExpenses()">
@@ -237,7 +280,7 @@
                                     </button>
                                 </div>
                             </div>
-                            
+
                             <!-- Expenses Table -->
                             <div class="table-responsive">
                                 <table class="table table-striped">
@@ -255,7 +298,7 @@
                                     </tbody>
                                 </table>
                             </div>
-                            
+
                             <!-- Pagination -->
                             <nav aria-label="Expenses pagination">
                                 <ul class="pagination justify-content-center" id="pagination">
@@ -279,7 +322,8 @@
                                     <div class="col-md-6">
                                         <div class="mb-3">
                                             <label for="expenseTitle" class="form-label">Title *</label>
-                                            <input type="text" class="form-control" id="expenseTitle" name="title" required>
+                                            <input type="text" class="form-control" id="expenseTitle" name="title"
+                                                required>
                                         </div>
                                     </div>
                                     <div class="col-md-4">
@@ -287,14 +331,16 @@
                                             <label for="expenseAmount" class="form-label">Amount *</label>
                                             <div class="input-group">
                                                 <span class="input-group-text" id="currencySymbol">₹</span>
-                                                <input type="number" class="form-control" id="expenseAmount" name="amount" step="0.01" min="0.01" required>
+                                                <input type="number" class="form-control" id="expenseAmount"
+                                                    name="amount" step="0.01" min="0.01" required>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="col-md-2">
                                         <div class="mb-3">
                                             <label for="expenseCurrency" class="form-label">Currency *</label>
-                                            <select class="form-select" id="expenseCurrency" name="currency" required onchange="updateCurrencySymbol()">
+                                            <select class="form-select" id="expenseCurrency" name="currency" required
+                                                onchange="updateCurrencySymbol()">
                                                 <option value="INR" selected>INR (₹)</option>
                                                 <option value="USD">USD ($)</option>
                                                 <option value="EUR">EUR (€)</option>
@@ -330,13 +376,15 @@
                                     <div class="col-md-6">
                                         <div class="mb-3">
                                             <label for="expenseDate" class="form-label">Date *</label>
-                                            <input type="date" class="form-control" id="expenseDate" name="date" required>
+                                            <input type="date" class="form-control" id="expenseDate" name="date"
+                                                required>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="mb-3">
                                     <label for="expenseDescription" class="form-label">Description</label>
-                                    <textarea class="form-control" id="expenseDescription" name="description" rows="3" placeholder="Optional description..."></textarea>
+                                    <textarea class="form-control" id="expenseDescription" name="description" rows="3"
+                                        placeholder="Optional description..."></textarea>
                                 </div>
                                 <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                                     <button type="button" class="btn btn-secondary" onclick="resetExpenseForm()">
@@ -351,44 +399,82 @@
                     </div>
                 </div>
 
-                <!-- Reports Tab -->
                 <div class="tab-pane fade" id="reports" role="tabpanel">
+
+                    <!-- AI Button -->
+                    <div class="text mt-3">
+                        <button class="btn btn-success" onclick="analyzeExpensesAI()">
+                            🤖 AI Expense Analysis
+                        </button>
+                    </div>
+
+                    <!-- AI Result -->
+                    <div id="aiInsight" class="ai-insight-card mt-3 d-none">
+                        <h5 class="mb-2">
+                            <i class="fas fa-robot me-2"></i>AI Financial Insights
+                        </h5>
+                        <div id="aiInsightContent"></div>
+                    </div>
+
                     <div class="row mt-3">
+
+                        <!-- Category Chart -->
                         <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h6 class="mb-0">Category Breakdown</h6>
+                            <div class="card h-100">
+
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">Category Breakdown</h5>
+
+                                    <select id="categoryYearSelector" class="form-select form-select-sm w-auto"
+                                        onchange="loadCategoryChart()">
+                                    </select>
                                 </div>
+
                                 <div class="card-body">
                                     <canvas id="categoryChart"></canvas>
                                 </div>
+
                             </div>
                         </div>
+
+                        <!-- Monthly Chart -->
                         <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h6 class="mb-0">Monthly Trends (Current Year)</h6>
+                            <div class="card h-100">
+
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">Monthly Expenses</h5>
+
+                                    <select id="monthlyYearSelector" class="form-select form-select-sm w-auto"
+                                        onchange="loadMonthlyChart()">
+                                    </select>
                                 </div>
+
                                 <div class="card-body">
                                     <canvas id="monthlyChart"></canvas>
                                 </div>
+
                             </div>
                         </div>
+
                     </div>
+
                     <div class="row mt-3">
                         <div class="col-12">
                             <div class="card">
+
                                 <div class="card-header">
                                     <h6 class="mb-0">Expense Trends (Last 12 Months)</h6>
                                 </div>
+
                                 <div class="card-body">
                                     <canvas id="trendChart"></canvas>
                                 </div>
+
                             </div>
                         </div>
                     </div>
-                </div>
 
+                </div>
                 <!-- Currency Tab -->
                 <div class="tab-pane fade" id="currency" role="tabpanel">
                     <div class="row mt-3">
@@ -403,7 +489,8 @@
                                         <div class="row mb-3">
                                             <div class="col-md-6">
                                                 <label for="convertAmount" class="form-label">Amount</label>
-                                                <input type="number" class="form-control" id="convertAmount" step="0.01" min="0.01" placeholder="Enter amount" required>
+                                                <input type="number" class="form-control" id="convertAmount" step="0.01"
+                                                    min="0.01" placeholder="Enter amount" required>
                                             </div>
                                             <div class="col-md-6">
                                                 <label for="fromCurrency" class="form-label">From Currency</label>
@@ -428,7 +515,8 @@
                                                 </select>
                                             </div>
                                             <div class="col-md-6 d-flex align-items-end">
-                                                <button type="button" class="btn btn-outline-secondary me-2" onclick="swapCurrencies()">
+                                                <button type="button" class="btn btn-outline-secondary me-2"
+                                                    onclick="swapCurrencies()">
                                                     <i class="fas fa-exchange-alt"></i>
                                                 </button>
                                                 <button type="submit" class="btn btn-primary flex-fill">
@@ -437,7 +525,7 @@
                                             </div>
                                         </div>
                                     </form>
-                                    
+
                                     <!-- Conversion Result -->
                                     <div id="conversionResult" class="d-none">
                                         <div class="alert alert-success">
@@ -461,7 +549,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Exchange Rates Table -->
                         <div class="col-md-6">
                             <div class="card">
@@ -471,7 +559,8 @@
                                             <h6 class="mb-0"><i class="fas fa-table me-2"></i>Exchange Rates</h6>
                                         </div>
                                         <div class="col-auto">
-                                            <button class="btn btn-sm btn-outline-primary" onclick="refreshExchangeRates()">
+                                            <button class="btn btn-sm btn-outline-primary"
+                                                onclick="refreshExchangeRates()">
                                                 <i class="fas fa-sync me-1"></i>Refresh
                                             </button>
                                         </div>
@@ -505,7 +594,8 @@
 
         <!-- Welcome Screen for Unauthenticated Users -->
         <div id="welcomeContent">
-            <div class="container-fluid d-flex align-items-center justify-content-center" style="min-height: 90vh; padding-top: 2rem;">
+            <div class="container-fluid d-flex align-items-center justify-content-center"
+                style="min-height: 90vh; padding-top: 2rem;">
                 <div class="row w-100">
                     <div class="col-md-10 col-lg-8 col-xl-7 mx-auto">
                         <div class="welcome-card text-center">
@@ -513,7 +603,8 @@
                                 <i class="fas fa-wallet"></i>
                             </div>
                             <h1 class="welcome-title mb-3">Expense Tracker</h1>
-                            <p class="welcome-subtitle mb-4">Take control of your finances with our comprehensive expense tracking solution.</p>
+                            <p class="welcome-subtitle mb-4">Take control of your finances with our comprehensive
+                                expense tracking solution.</p>
                             <div class="welcome-features mb-5">
                                 <div class="row">
                                     <div class="col-md-4 mb-3">
@@ -537,10 +628,12 @@
                                 </div>
                             </div>
                             <div class="welcome-buttons">
-                                <button class="btn btn-primary btn-lg me-3 welcome-btn" onclick="showLoginModal('login')">
+                                <button class="btn btn-primary btn-lg me-3 welcome-btn"
+                                    onclick="showLoginModal('login')">
                                     <i class="fas fa-sign-in-alt me-2"></i>Login
                                 </button>
-                                <button class="btn btn-outline-primary btn-lg welcome-btn" onclick="showLoginModal('register')">
+                                <button class="btn btn-outline-primary btn-lg welcome-btn"
+                                    onclick="showLoginModal('register')">
                                     <i class="fas fa-user-plus me-2"></i>Register
                                 </button>
                             </div>
@@ -577,6 +670,8 @@
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
     <script src="app.js"></script>
 </body>
+
 </html>
