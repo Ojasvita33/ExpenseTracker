@@ -141,7 +141,9 @@ router.post("/forgot-password", async (req, res) => {
 
     await user.save();
 
-    const resetLink = `${process.env.BASE_URL}/reset-password.html?token=${token}`;
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+
+    const resetLink = `${baseUrl}/reset-password.html?token=${token}`;
 
     await transporter.sendMail({
       from: process.env.EMAIL_FROM,
