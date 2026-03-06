@@ -23,13 +23,15 @@ const currencySymbols = {
 const API_BASE = '/api';
 
 // Initialize app
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // Initialize theme
     initializeTheme();
-    
+
     // Initialize user's preferred currency
     initializeUserCurrency();
-    
+
+    populateYears();
+
     // Check if user is logged in
     authToken = localStorage.getItem('authToken');
     if (authToken) {
@@ -40,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Set up event listeners
     setupEventListeners();
-    
+
     // Set today's date as default
     document.getElementById('expenseDate').value = new Date().toISOString().split('T')[0];
 });
@@ -55,7 +57,7 @@ function updateCurrencySymbol() {
 function formatCurrency(amount, currency) {
     const symbol = currencySymbols[currency] || currency;
     const formattedAmount = parseFloat(amount).toFixed(2);
-    
+
     if (currency === 'EUR') {
         return `${formattedAmount} ${symbol}`;
     }
@@ -72,7 +74,7 @@ function initializeTheme() {
 function setTheme(theme) {
     const html = document.documentElement;
     const themeIcon = document.getElementById('themeIcon');
-    
+
     if (theme === 'dark') {
         html.setAttribute('data-theme', 'dark');
         if (themeIcon) {
@@ -84,10 +86,10 @@ function setTheme(theme) {
             themeIcon.className = 'fas fa-moon';
         }
     }
-    
+
     // Save theme preference
     localStorage.setItem('theme', theme);
-    
+
     // Update charts if they exist (for better visibility in dark mode)
     if (Object.keys(charts).length > 0) {
         updateChartsForTheme(theme);
@@ -98,7 +100,7 @@ function toggleTheme() {
     const currentTheme = document.documentElement.getAttribute('data-theme');
     const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
     setTheme(newTheme);
-    
+
     // Show toast notification
     showToast(`Switched to ${newTheme} mode`, 'success');
 }
@@ -107,7 +109,7 @@ function updateChartsForTheme(theme) {
     const isDark = theme === 'dark';
     const textColor = isDark ? '#ffffff' : '#666';
     const gridColor = isDark ? '#4a5568' : '#e0e0e0';
-    
+
     // Update all existing charts
     Object.values(charts).forEach(chart => {
         if (chart && chart.options) {
@@ -115,7 +117,7 @@ function updateChartsForTheme(theme) {
             if (chart.options.plugins && chart.options.plugins.legend) {
                 chart.options.plugins.legend.labels.color = textColor;
             }
-            
+
             // Update scales colors for line/bar charts
             if (chart.options.scales) {
                 Object.keys(chart.options.scales).forEach(scaleKey => {
@@ -128,7 +130,7 @@ function updateChartsForTheme(theme) {
                     }
                 });
             }
-            
+
             // Update the chart
             chart.update();
         }
@@ -139,14 +141,14 @@ function updateChartsForTheme(theme) {
 function initializeUserCurrency() {
     // Get user's MANUALLY SET default currency, not the last used currency
     const userDefaultCurrency = localStorage.getItem('userDefaultCurrency') || 'INR';
-    
+
     // Set currency dropdown to user's default (they can change it for individual expenses)
     const currencySelect = document.getElementById('expenseCurrency');
     if (currencySelect) {
         currencySelect.value = userDefaultCurrency;
         updateCurrencySymbol();
     }
-    
+
     // Update navbar currency selector
     updateNavbarCurrencySelector(userDefaultCurrency);
 }
@@ -154,17 +156,17 @@ function initializeUserCurrency() {
 function setDefaultCurrency(currency) {
     // Save the new DEFAULT currency - this is user's manual choice
     localStorage.setItem('userDefaultCurrency', currency);
-    
+
     // Update navbar display
     updateNavbarCurrencySelector(currency);
-    
+
     // Update expense form currency to this default
     const currencySelect = document.getElementById('expenseCurrency');
     if (currencySelect) {
         currencySelect.value = currency;
         updateCurrencySymbol();
     }
-    
+
     // Refresh dashboard with new currency
     if (authToken) {
         loadDashboard();
@@ -172,7 +174,7 @@ function setDefaultCurrency(currency) {
         // Also refresh charts/reports so they use the new currency
         loadReports();
     }
-    
+
     // Show success message
     showToast(`Default currency set to ${currency}. All amounts will be converted to ${currency}`, 'success');
 }
@@ -182,7 +184,7 @@ function updateNavbarCurrencySelector(currency) {
     if (selectedCurrency) {
         selectedCurrency.textContent = currency;
     }
-    
+
     // Update dropdown button with currency symbol
     const currencyButton = document.getElementById('currencyDropdown');
     if (currencyButton) {
@@ -196,13 +198,13 @@ function showFieldError(fieldId, message) {
     const field = document.getElementById(fieldId);
     if (field) {
         field.classList.add('is-invalid');
-        
+
         // Remove existing error message
         const existingError = field.parentNode.querySelector('.invalid-feedback');
         if (existingError) {
             existingError.remove();
         }
-        
+
         // Add new error message
         const errorDiv = document.createElement('div');
         errorDiv.className = 'invalid-feedback';
@@ -217,7 +219,7 @@ function clearValidationErrors() {
     invalidFields.forEach(field => {
         field.classList.remove('is-invalid');
     });
-    
+
     // Remove all error messages
     const errorMessages = document.querySelectorAll('.invalid-feedback');
     errorMessages.forEach(error => {
@@ -231,12 +233,12 @@ async function getExchangeRates() {
         // Try to get cached rates first
         const cached = localStorage.getItem('exchangeRates');
         const cacheTime = localStorage.getItem('exchangeRatesTime');
-        
+
         // Use cached rates if they're less than 1 hour old
         if (cached && cacheTime && (Date.now() - parseInt(cacheTime)) < 3600000) {
             return JSON.parse(cached);
         }
-        
+
         // Fetch new rates from API
         const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
         if (response.ok) {
@@ -249,7 +251,7 @@ async function getExchangeRates() {
     } catch (error) {
         console.warn('Exchange rate fetch failed, using fallback rates');
     }
-    
+
     // Fallback exchange rates (approximate)
     return {
         USD: 1,
@@ -267,28 +269,28 @@ async function getExchangeRates() {
 
 function convertCurrencyAmount(amount, fromCurrency, toCurrency, exchangeRates) {
     if (fromCurrency === toCurrency) return amount;
-    
+
     // Convert to USD first, then to target currency
     const usdAmount = amount / exchangeRates[fromCurrency];
     const convertedAmount = usdAmount * exchangeRates[toCurrency];
-    
+
     return convertedAmount;
 }
 
 async function convertAndSumExpenses(expenses, targetCurrency) {
     const exchangeRates = await getExchangeRates();
     let totalAmount = 0;
-    
+
     expenses.forEach(expense => {
         const convertedAmount = convertCurrencyAmount(
-            expense.amount, 
-            expense.currency, 
-            targetCurrency, 
+            expense.amount,
+            expense.currency,
+            targetCurrency,
             exchangeRates
         );
         totalAmount += convertedAmount;
     });
-    
+
     return totalAmount;
 }
 
@@ -326,7 +328,7 @@ async function updateDashboardWithCurrencyConversion(data, preferredCurrency) {
             const monthlyExpenses = await getExpensesForRange(startOfMonth, endOfMonth);
             monthlyTotal = await convertAndSumExpenses(monthlyExpenses, preferredCurrency);
         }
-        
+
         // Convert weekly total
         let weeklyTotal = 0;
         if (data.weekly && data.weekly.expenses && data.weekly.expenses.length > 0) {
@@ -341,7 +343,7 @@ async function updateDashboardWithCurrencyConversion(data, preferredCurrency) {
             const weeklyExpenses = await getExpensesForRange(startOfWeek, endOfWeek);
             weeklyTotal = await convertAndSumExpenses(weeklyExpenses, preferredCurrency);
         }
-        
+
         // Convert yearly total
         let yearlyTotal = 0;
         if (data.yearly && data.yearly.expenses && data.yearly.expenses.length > 0) {
@@ -354,15 +356,15 @@ async function updateDashboardWithCurrencyConversion(data, preferredCurrency) {
             const yearlyExpenses = await getExpensesForRange(startOfYear, endOfYear);
             yearlyTotal = await convertAndSumExpenses(yearlyExpenses, preferredCurrency);
         }
-        
+
         // Update dashboard with converted amounts
         document.getElementById('monthlyTotal').textContent = formatCurrency(monthlyTotal, preferredCurrency);
         document.getElementById('weeklyTotal').textContent = formatCurrency(weeklyTotal, preferredCurrency);
         document.getElementById('yearlyTotal').textContent = formatCurrency(yearlyTotal, preferredCurrency);
         document.getElementById('totalExpenses').textContent = data.yearly.count || 0;
-        
-    // Do not show a per-card conversion indicator. Dashboard values are shown in the user's preferred currency.
-        
+
+        // Do not show a per-card conversion indicator. Dashboard values are shown in the user's preferred currency.
+
     } catch (error) {
         console.error('Currency conversion error:', error);
         // Fallback to original amounts
@@ -379,16 +381,16 @@ async function updateDashboardWithCurrencyConversion(data, preferredCurrency) {
 function setupEventListeners() {
     // Auth form submission
     document.getElementById('authForm').addEventListener('submit', handleAuth);
-    
+
     // Expense form submission
     document.getElementById('expenseForm').addEventListener('submit', handleExpenseSubmit);
-    
+
     // Search input
     document.getElementById('searchInput').addEventListener('input', debounce(loadExpenses, 500));
-    
+
     // Category filter
     document.getElementById('categoryFilter').addEventListener('change', loadExpenses);
-    
+
     // Tab switching
     document.getElementById('reports-tab').addEventListener('click', loadReports);
 }
@@ -410,19 +412,19 @@ function debounce(func, wait) {
 function showLoginModal(mode = 'login') {
     const modal = new bootstrap.Modal(document.getElementById('loginModal'));
     const isLogin = mode === 'login';
-    
+
     document.getElementById('authModalTitle').textContent = isLogin ? 'Login' : 'Register';
     document.getElementById('nameField').style.display = isLogin ? 'none' : 'block';
     document.getElementById('authSubmitBtn').textContent = isLogin ? 'Login' : 'Register';
     document.getElementById('authSwitchText').textContent = isLogin ? "Don't have an account?" : "Already have an account?";
     document.getElementById('authSwitchLink').textContent = isLogin ? 'Register here' : 'Login here';
-    
+
     if (isLogin) {
         document.getElementById('name').removeAttribute('required');
     } else {
         document.getElementById('name').setAttribute('required', 'required');
     }
-    
+
     modal.show();
 }
 
@@ -436,16 +438,16 @@ async function handleAuth(e) {
     e.preventDefault();
     const formData = new FormData(e.target);
     const isLogin = document.getElementById('authModalTitle').textContent === 'Login';
-    
+
     const data = {
         email: formData.get('email'),
         password: formData.get('password')
     };
-    
+
     if (!isLogin) {
         data.name = formData.get('name');
     }
-    
+
     try {
         showLoading(true);
         const response = await fetch(`${API_BASE}/auth/${isLogin ? 'login' : 'register'}`, {
@@ -455,14 +457,14 @@ async function handleAuth(e) {
             },
             body: JSON.stringify(data)
         });
-        
+
         const result = await response.json();
-        
+
         if (response.ok) {
             authToken = result.token;
             localStorage.setItem('authToken', authToken);
             currentUser = result.user;
-            
+
             // Close modal and show main content
             bootstrap.Modal.getInstance(document.getElementById('loginModal')).hide();
             showMainContent();
@@ -484,7 +486,7 @@ async function getCurrentUser() {
                 'Authorization': `Bearer ${authToken}`
             }
         });
-        
+
         if (response.ok) {
             const result = await response.json();
             currentUser = result.user;
@@ -523,11 +525,11 @@ function showMainContent() {
     document.getElementById('authNav').classList.remove('d-none');
     document.getElementById('currencySelector').style.display = 'block';
     document.getElementById('userName').textContent = currentUser.name;
-    
+
     // Initialize currency selector with user's default currency
     const userDefaultCurrency = localStorage.getItem('userDefaultCurrency') || 'INR';
     updateNavbarCurrencySelector(userDefaultCurrency);
-    
+
     // Load initial data
     loadDashboard();
     loadExpenses();
@@ -540,13 +542,13 @@ function showLoading(show) {
 function showToast(message, type = 'info') {
     const toast = document.getElementById('toast');
     const toastMessage = document.getElementById('toastMessage');
-    
+
     toastMessage.textContent = message;
-    
+
     // Update toast header based on type
     const icon = toast.querySelector('.fas');
     const headerText = toast.querySelector('.me-auto');
-    
+
     switch (type) {
         case 'success':
             icon.className = 'fas fa-check-circle text-success me-2';
@@ -560,7 +562,7 @@ function showToast(message, type = 'info') {
             icon.className = 'fas fa-info-circle text-primary me-2';
             headerText.textContent = 'Info';
     }
-    
+
     const bsToast = new bootstrap.Toast(toast);
     bsToast.show();
 }
@@ -573,14 +575,14 @@ async function loadDashboard() {
                 'Authorization': `Bearer ${authToken}`
             }
         });
-        
+
         if (response.ok) {
             const data = await response.json();
-            
+
             // Get user's MANUALLY SET preferred currency (default to INR)
             // This should ONLY change when user explicitly sets it via navbar dropdown
             const preferredCurrency = localStorage.getItem('userDefaultCurrency') || 'INR';
-            
+
             // Convert all amounts to user's preferred currency
             await updateDashboardWithCurrencyConversion(data, preferredCurrency);
         }
@@ -597,12 +599,12 @@ async function loadExpenses(page = 1) {
             page: page,
             limit: 10
         });
-        
+
         // Add filters
         const search = document.getElementById('searchInput').value;
         const category = document.getElementById('categoryFilter').value;
         const filterDate = document.getElementById('filterDate').value;
-        
+
         if (search) params.append('search', search);
         if (category && category !== 'all') params.append('category', category);
         if (filterDate) {
@@ -613,13 +615,13 @@ async function loadExpenses(page = 1) {
             params.append('startDate', startOfMonth.toISOString().split('T')[0]);
             params.append('endDate', endOfMonth.toISOString().split('T')[0]);
         }
-        
+
         const response = await fetch(`${API_BASE}/expenses?${params}`, {
             headers: {
                 'Authorization': `Bearer ${authToken}`
             }
         });
-        
+
         if (response.ok) {
             const data = await response.json();
             displayExpenses(data.expenses);
@@ -636,7 +638,7 @@ async function loadExpenses(page = 1) {
 async function displayExpenses(expenses) {
     const tbody = document.getElementById('expensesTableBody');
     tbody.innerHTML = '';
-    
+
     if (expenses.length === 0) {
         tbody.innerHTML = `
             <tr>
@@ -648,21 +650,21 @@ async function displayExpenses(expenses) {
         `;
         return;
     }
-    
+
     const userDefaultCurrency = localStorage.getItem('userDefaultCurrency') || 'INR';
     const exchangeRates = await getExchangeRates();
-    
+
     expenses.forEach(expense => {
         const row = document.createElement('tr');
         const originalAmount = formatCurrency(expense.amount, expense.currency || 'USD');
-        
+
         // Show converted amount if different currency than user's default
         let amountDisplay = originalAmount;
         if (expense.currency !== userDefaultCurrency) {
             const convertedAmount = convertCurrencyAmount(
-                expense.amount, 
-                expense.currency || 'USD', 
-                userDefaultCurrency, 
+                expense.amount,
+                expense.currency || 'USD',
+                userDefaultCurrency,
                 exchangeRates
             );
             const convertedFormatted = formatCurrency(convertedAmount, userDefaultCurrency);
@@ -673,7 +675,7 @@ async function displayExpenses(expenses) {
         } else {
             amountDisplay = `<div class="expense-amount">${originalAmount}</div>`;
         }
-        
+
         row.innerHTML = `
             <td>
                 <div class="fw-bold">${expense.title}</div>
@@ -703,9 +705,9 @@ async function displayExpenses(expenses) {
 function displayPagination(pagination) {
     const paginationContainer = document.getElementById('pagination');
     paginationContainer.innerHTML = '';
-    
+
     if (pagination.totalPages <= 1) return;
-    
+
     // Previous button
     if (pagination.hasPrev) {
         paginationContainer.innerHTML += `
@@ -714,7 +716,7 @@ function displayPagination(pagination) {
             </li>
         `;
     }
-    
+
     // Page numbers
     for (let i = 1; i <= pagination.totalPages; i++) {
         if (i === pagination.currentPage) {
@@ -737,7 +739,7 @@ function displayPagination(pagination) {
             `;
         }
     }
-    
+
     // Next button
     if (pagination.hasNext) {
         paginationContainer.innerHTML += `
@@ -751,7 +753,7 @@ function displayPagination(pagination) {
 async function handleExpenseSubmit(e) {
     e.preventDefault();
     const formData = new FormData(e.target);
-    
+
     // Get form data directly from elements (more reliable)
     const title = document.getElementById('expenseTitle').value.trim();
     const amount = parseFloat(document.getElementById('expenseAmount').value);
@@ -759,43 +761,43 @@ async function handleExpenseSubmit(e) {
     const currency = document.getElementById('expenseCurrency').value;
     const date = document.getElementById('expenseDate').value;
     const description = document.getElementById('expenseDescription').value.trim();
-    
+
     // Remove previous validation styling
     clearValidationErrors();
-    
+
     // Validate required fields
     let hasErrors = false;
-    
+
     if (!title) {
         showFieldError('expenseTitle', 'Title is required');
         hasErrors = true;
     }
-    
+
     if (!amount || amount <= 0) {
         showFieldError('expenseAmount', 'Valid amount is required');
         hasErrors = true;
     }
-    
+
     if (!category) {
         showFieldError('expenseCategory', 'Category is required');
         hasErrors = true;
     }
-    
+
     if (!currency) {
         showFieldError('expenseCurrency', 'Currency is required');
         hasErrors = true;
     }
-    
+
     if (!date) {
         showFieldError('expenseDate', 'Date is required');
         hasErrors = true;
     }
-    
+
     if (hasErrors) {
         showToast('Please fill all required fields', 'error');
         return;
     }
-    
+
     const data = {
         title,
         amount,
@@ -804,16 +806,16 @@ async function handleExpenseSubmit(e) {
         date,
         description
     };
-    
+
     // Don't automatically change preferred currency on each expense
     // User should manually set it via navbar dropdown
-    
+
     try {
         showLoading(true);
         const expenseId = document.getElementById('expenseId').value;
         const url = expenseId ? `${API_BASE}/expenses/${expenseId}` : `${API_BASE}/expenses`;
         const method = expenseId ? 'PUT' : 'POST';
-        
+
         const response = await fetch(url, {
             method,
             headers: {
@@ -822,15 +824,15 @@ async function handleExpenseSubmit(e) {
             },
             body: JSON.stringify(data)
         });
-        
+
         const result = await response.json();
-        
+
         if (response.ok) {
             showToast(result.message, 'success');
             resetExpenseForm();
             loadExpenses(currentPage);
             loadDashboard();
-            
+
             // Switch back to expenses tab
             document.getElementById('expenses-tab').click();
         } else {
@@ -850,10 +852,10 @@ async function editExpense(id) {
                 'Authorization': `Bearer ${authToken}`
             }
         });
-        
+
         if (response.ok) {
             const expense = await response.json();
-            
+
             // Fill form with expense data
             document.getElementById('expenseId').value = expense._id;
             document.getElementById('expenseTitle').value = expense.title;
@@ -862,15 +864,15 @@ async function editExpense(id) {
             document.getElementById('expenseCurrency').value = expense.currency || 'USD';
             document.getElementById('expenseDate').value = expense.date.split('T')[0];
             document.getElementById('expenseDescription').value = expense.description || '';
-            
+
             // Update currency symbol
             updateCurrencySymbol();
-            
+
             // Update form UI
             document.getElementById('expenseFormTitle').textContent = 'Edit Expense';
             document.getElementById('submitBtnText').textContent = 'Update Expense';
             isEditMode = true;
-            
+
             // Switch to add tab
             document.getElementById('add-tab').click();
         }
@@ -881,7 +883,7 @@ async function editExpense(id) {
 
 async function deleteExpense(id) {
     if (!confirm('Are you sure you want to delete this expense?')) return;
-    
+
     try {
         showLoading(true);
         const response = await fetch(`${API_BASE}/expenses/${id}`, {
@@ -890,9 +892,9 @@ async function deleteExpense(id) {
                 'Authorization': `Bearer ${authToken}`
             }
         });
-        
+
         const result = await response.json();
-        
+
         if (response.ok) {
             showToast(result.message, 'success');
             loadExpenses(currentPage);
@@ -913,15 +915,15 @@ function resetExpenseForm() {
     document.getElementById('expenseFormTitle').textContent = 'Add New Expense';
     document.getElementById('submitBtnText').textContent = 'Add Expense';
     document.getElementById('expenseDate').value = new Date().toISOString().split('T')[0];
-    
+
     // Clear validation errors
     clearValidationErrors();
-    
+
     // Reset to user's default currency (not last used currency)
     const userDefaultCurrency = localStorage.getItem('userDefaultCurrency') || 'INR';
     document.getElementById('expenseCurrency').value = userDefaultCurrency;
     updateCurrencySymbol();
-    
+
     isEditMode = false;
 }
 
@@ -940,131 +942,230 @@ async function loadReports() {
         loadTrendChart()
     ]);
 }
-
 async function loadCategoryChart() {
+    const year = document.getElementById("categoryYearSelector").value;
     try {
-        const response = await fetch(`${API_BASE}/reports/category`, {
+
+        const res = await fetch(`${API_BASE}/reports/category?year=${year}`, {
             headers: {
-                'Authorization': `Bearer ${authToken}`
+                "Authorization": `Bearer ${authToken}`
             }
         });
-        
-        if (response.ok) {
-            const data = await response.json();
-            // Convert dataset values to user's preferred currency and show currency sign
-            const preferredCurrency = localStorage.getItem('userDefaultCurrency') || 'INR';
-            const exchangeRates = await getExchangeRates();
 
-            const labels = data.categoryTotals.map(cat => cat.category);
-            const convertedData = data.categoryTotals.map(cat => {
-                // assume server totals are USD-based amounts
-                return convertCurrencyAmount(cat.total, 'USD', preferredCurrency, exchangeRates);
-            });
+        const data = await res.json();
 
-            if (charts.categoryChart) {
-                charts.categoryChart.destroy();
-            }
+        const labels = data.categoryTotals.map(c => c.category);
+        const values = data.categoryTotals.map(c => c.total);
 
-            const ctx = document.getElementById('categoryChart');
-            charts.categoryChart = new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: convertedData,
-                        backgroundColor: [
-                            '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4',
-                            '#ffeaa7', '#fd79a8', '#6c5ce7', '#a29bfe', '#636e72'
-                        ]
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const idx = context.dataIndex;
-                                    const value = convertedData[idx] || 0;
-                                    const percentage = data.categoryTotals[idx].percentage;
-                                    return `${context.label}: ${formatCurrency(value, preferredCurrency)} (${percentage}%)`;
-                                }
-                            }
-                        }
-                    }
-                }
-            });
+        if (charts.categoryChart) {
+            charts.categoryChart.destroy();
         }
-    } catch (error) {
-        console.error('Category chart error:', error);
-    }
-}
 
-async function loadMonthlyChart() {
-    try {
-        const year = new Date().getFullYear();
-        const response = await fetch(`${API_BASE}/reports/monthly?year=${year}`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            // Convert monthly totals to user's preferred currency
-            const preferredCurrency = localStorage.getItem('userDefaultCurrency') || 'INR';
-            const exchangeRates = await getExchangeRates();
+        const ctx = document.getElementById("categoryChart").getContext("2d");
 
-            const labels = data.monthlyTotals.map(month => month.month);
-            const converted = data.monthlyTotals.map(month => convertCurrencyAmount(month.total, 'USD', preferredCurrency, exchangeRates));
+        charts.categoryChart = new Chart(ctx, {
+            type: "pie",
 
-            if (charts.monthlyChart) {
-                charts.monthlyChart.destroy();
-            }
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: [
+                        "#ff6b6b",
+                        "#4ecdc4",
+                        "#45b7d1",
+                        "#96ceb4",
+                        "#ffeaa7",
+                        "#fd79a8",
+                        "#6c5ce7"
+                    ],
+                    borderWidth: 2,
+                    borderColor: "#fff"
+                }]
+            },
 
-            const ctx = document.getElementById('monthlyChart');
-            charts.monthlyChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Expenses',
-                        data: converted,
-                        backgroundColor: 'rgba(54, 162, 235, 0.8)',
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        borderWidth: 1
-                    }]
+            options: {
+
+                responsive: true,
+
+                animation: {
+                    animateRotate: true,
+                    animateScale: true
                 },
-                options: {
-                    responsive: true,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function(value) {
-                                    return formatCurrency(value, preferredCurrency);
-                                }
+
+                plugins: {
+
+                    legend: {
+                        position: "bottom",
+                        labels: {
+                            generateLabels(chart) {
+
+                                const data = chart.data;
+                                const dataset = data.datasets[0];
+                                const total = dataset.data.reduce((a, b) => a + b, 0);
+
+                                return data.labels.map((label, i) => {
+
+                                    const value = dataset.data[i];
+                                    const percentage = ((value / total) * 100).toFixed(1);
+
+                                    return {
+                                        text: `${label} (${percentage}%)`,
+                                        fillStyle: dataset.backgroundColor[i],
+                                        hidden: false,
+                                        index: i
+                                    };
+
+                                });
+
                             }
                         }
                     },
-                    plugins: {
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return `Expenses: ${formatCurrency(context.parsed.y, preferredCurrency)}`;
-                                }
+
+                    tooltip: {
+
+                        callbacks: {
+
+                            label(context) {
+
+                                const value = context.raw;
+                                const total = context.dataset.data
+                                    .reduce((a, b) => a + b, 0);
+
+                                const percentage = ((value / total) * 100).toFixed(1);
+
+                                return `${context.label}: ${value} (${percentage}%)`;
+
+                            }
+
+                        }
+
+                    },
+
+                    datalabels: {
+
+                        color: "#fff",
+                        font: {
+                            weight: "bold",
+                            size: 14
+                        },
+
+                        formatter(value, context) {
+
+                            const total = context.chart.data.datasets[0].data
+                                .reduce((a, b) => a + b, 0);
+
+                            const percentage = ((value / total) * 100).toFixed(0);
+
+                            return percentage + "%";
+
+                        }
+
+                    }
+
+                }
+
+            },
+
+            plugins: [ChartDataLabels]
+
+        });
+
+    } catch (error) {
+        console.error("Category chart error:", error);
+    }
+
+}
+
+async function loadMonthlyChart() {
+
+    try {
+
+        const year = document.getElementById("monthlyYearSelector").value;
+
+        const preferredCurrency = localStorage.getItem("userDefaultCurrency") || "INR";
+
+        const exchangeRates = await getExchangeRates();
+
+        const response = await fetch(`${API_BASE}/expenses?limit=1000`, {
+            headers: {
+                Authorization: `Bearer ${authToken}`
+            }
+        });
+
+        const result = await response.json();
+
+        const months = Array(12).fill(0);
+
+        result.expenses.forEach(exp => {
+
+            const date = new Date(exp.date);
+
+            if (date.getFullYear() == year) {
+
+                const month = date.getMonth();
+
+                const converted = convertCurrencyAmount(
+                    exp.amount,
+                    exp.currency || "USD",
+                    preferredCurrency,
+                    exchangeRates
+                );
+
+                months[month] += converted;
+
+            }
+
+        });
+
+        const labels = [
+            "Jan","Feb","Mar","Apr","May","Jun",
+            "Jul","Aug","Sep","Oct","Nov","Dec"
+        ];
+
+        if (charts.monthlyChart) {
+            charts.monthlyChart.destroy();
+        }
+
+        const ctx = document.getElementById("monthlyChart").getContext("2d");
+
+        charts.monthlyChart = new Chart(ctx, {
+
+            type: "bar",
+
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: "Expenses",
+                    data: months,
+                    backgroundColor: "rgba(54,162,235,0.8)",
+                    borderColor: "rgba(54,162,235,1)",
+                    borderWidth: 1
+                }]
+            },
+
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value){
+                                return formatCurrency(value, preferredCurrency);
                             }
                         }
                     }
                 }
-            });
-        }
+            }
+
+        });
+
     } catch (error) {
-        console.error('Monthly chart error:', error);
+
+        console.error("Monthly chart error:", error);
+
     }
+
 }
 
 async function loadTrendChart() {
@@ -1074,7 +1175,7 @@ async function loadTrendChart() {
                 'Authorization': `Bearer ${authToken}`
             }
         });
-        
+
         if (response.ok) {
             const data = await response.json();
             // Convert trend data to user's preferred currency
@@ -1109,7 +1210,7 @@ async function loadTrendChart() {
                         y: {
                             beginAtZero: true,
                             ticks: {
-                                callback: function(value) {
+                                callback: function (value) {
                                     return formatCurrency(value, preferredCurrency);
                                 }
                             }
@@ -1118,7 +1219,7 @@ async function loadTrendChart() {
                     plugins: {
                         tooltip: {
                             callbacks: {
-                                label: function(context) {
+                                label: function (context) {
                                     return `Expenses: ${formatCurrency(context.parsed.y, preferredCurrency)}`;
                                 }
                             }
@@ -1237,7 +1338,7 @@ function updateCurrencySymbol() {
 function formatCurrency(amount, currency) {
     const symbol = currencySymbols[currency] || currency;
     const formattedAmount = parseFloat(amount).toFixed(2);
-    
+
     if (currency === 'EUR') {
         return `${formattedAmount} ${symbol}`;
     }
@@ -1245,7 +1346,7 @@ function formatCurrency(amount, currency) {
 }
 
 // Currency converter functions
-document.getElementById('currencyConverterForm').addEventListener('submit', async function(e) {
+document.getElementById('currencyConverterForm').addEventListener('submit', async function (e) {
     e.preventDefault();
     await convertCurrency();
 });
@@ -1254,31 +1355,31 @@ async function convertCurrency() {
     const amount = parseFloat(document.getElementById('convertAmount').value);
     const fromCurrency = document.getElementById('fromCurrency').value;
     const toCurrency = document.getElementById('toCurrency').value;
-    
+
     // Improved validation
     if (!amount || amount <= 0) {
         showToast('Please enter a valid amount', 'error');
         return;
     }
-    
+
     if (!fromCurrency || !toCurrency) {
         showToast('Please select both currencies', 'error');
         return;
     }
-    
+
     if (fromCurrency === toCurrency) {
         showToast('Please select different currencies', 'error');
         return;
     }
-    
+
     try {
         showLoading(true);
-        
+
         // Use our existing exchange rate system
         const exchangeRates = await getExchangeRates();
         const convertedAmount = convertCurrencyAmount(amount, fromCurrency, toCurrency, exchangeRates);
         const exchangeRate = exchangeRates[toCurrency] / exchangeRates[fromCurrency];
-        
+
         // Display result
         const result = {
             originalAmount: amount,
@@ -1287,10 +1388,10 @@ async function convertCurrency() {
             toCurrency: toCurrency,
             exchangeRate: exchangeRate
         };
-        
+
         displayConversionResult(result);
         showToast('Currency converted successfully!', 'success');
-        
+
     } catch (error) {
         console.error('Conversion error:', error);
         showToast('Error during currency conversion', 'error');
@@ -1304,14 +1405,14 @@ function displayConversionResult(data) {
     document.getElementById('toAmount').textContent = formatCurrency(data.convertedAmount, data.toCurrency);
     document.getElementById('exchangeRate').textContent = `1 ${data.fromCurrency} = ${data.exchangeRate.toFixed(4)} ${data.toCurrency}`;
     document.getElementById('conversionTime').textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
-    
+
     document.getElementById('conversionResult').classList.remove('d-none');
 }
 
 function swapCurrencies() {
     const fromSelect = document.getElementById('fromCurrency');
     const toSelect = document.getElementById('toCurrency');
-    
+
     const temp = fromSelect.value;
     fromSelect.value = toSelect.value;
     toSelect.value = temp;
@@ -1326,7 +1427,7 @@ async function loadExchangeRates() {
                 'Authorization': `Bearer ${authToken}`
             }
         });
-        
+
         if (response.ok) {
             const result = await response.json();
             displayExchangeRates(result.data);
@@ -1347,7 +1448,7 @@ async function refreshExchangeRates() {
                 'Authorization': `Bearer ${authToken}`
             }
         });
-        
+
         if (response.ok) {
             const result = await response.json();
             displayExchangeRates(result.data);
@@ -1362,16 +1463,38 @@ async function refreshExchangeRates() {
     }
 }
 
+async function analyzeExpensesAI() {
+
+    const response = await fetch("/api/reports/ai-analysis", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${authToken}`
+        }
+    });
+
+    const data = await response.json();
+
+    const box = document.getElementById("aiInsight");
+    box.classList.remove("d-none");
+
+    const formatted = data.insight
+        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+        .replace(/\n/g, "<br>");
+
+    document.getElementById("aiInsightContent").innerHTML = formatted;
+}
+
 function displayExchangeRates(ratesData) {
     const tbody = document.getElementById('exchangeRatesTableBody');
     const rates = ratesData.rates;
-    
+
     const majorCurrencies = ['EUR', 'GBP', 'INR', 'JPY', 'CAD', 'AUD', 'CHF', 'CNY', 'KRW'];
-    
+
     tbody.innerHTML = majorCurrencies.map(currency => {
         const rate = rates[currency];
         const symbol = currencySymbols[currency] || currency;
-        
+
         return `
             <tr>
                 <td><strong>${currency}</strong> ${symbol}</td>
@@ -1379,13 +1502,87 @@ function displayExchangeRates(ratesData) {
             </tr>
         `;
     }).join('');
-    
+
     document.getElementById('ratesLastUpdated').textContent = new Date(ratesData.lastUpdated).toLocaleString();
 }
 
 // Tab change handlers for currency tab
-document.addEventListener('shown.bs.tab', function(e) {
+document.addEventListener('shown.bs.tab', function (e) {
     if (e.target.id === 'currency-tab') {
         loadExchangeRates(); // Load silently without notification
     }
 });
+async function forgotPassword() {
+
+    const email = prompt("Enter your email");
+
+    const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ email })
+    });
+
+    const data = await res.json();
+
+    alert(data.message);
+
+}
+
+function showForgotModal() {
+
+    const modal = new bootstrap.Modal(document.getElementById("forgotModal"));
+    modal.show();
+
+}
+
+async function sendResetLink() {
+
+    const email = document.getElementById("forgotEmail").value;
+
+    const res = await fetch("/api/auth/forgot-password", {
+
+        method: "POST",
+
+        headers: {
+            "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify({ email })
+
+    });
+
+    const data = await res.json();
+
+    alert(data.message);
+
+}
+function populateYears() {
+
+    const currentYear = new Date().getFullYear();
+
+    const selects = [
+        document.getElementById("categoryYearSelector"),
+        document.getElementById("monthlyYearSelector")
+    ];
+
+    selects.forEach(select => {
+
+        if (!select) return;
+
+        for (let i = currentYear; i >= currentYear - 5; i--) {
+
+            const option = document.createElement("option");
+            option.value = i;
+            option.textContent = i;
+
+            select.appendChild(option);
+
+        }
+
+        select.value = currentYear;
+
+    });
+
+}
